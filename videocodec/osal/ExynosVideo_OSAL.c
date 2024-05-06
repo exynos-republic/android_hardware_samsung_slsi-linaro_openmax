@@ -393,6 +393,44 @@ int Codec_OSAL_EnqueueBuf(
     return -1;
 }
 
+void log_v4l2_buffer_OSAL(const struct v4l2_buffer *buffer) {
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "index: %u", buffer->index);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "type: %u", buffer->type);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "bytesused: %u", buffer->bytesused);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "flags: %u", buffer->flags);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "field: %u", buffer->field);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "timestamp.tv_sec: %ld", buffer->timestamp.tv_sec);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "timestamp.tv_usec: %ld", buffer->timestamp.tv_usec);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "timecode.type: %u", buffer->timecode.type);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "timecode.flags: %u", buffer->timecode.flags);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "timecode.frames: %u", buffer->timecode.frames);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "timecode.seconds: %u", buffer->timecode.seconds);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "timecode.minutes: %u", buffer->timecode.minutes);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "timecode.hours: %u", buffer->timecode.hours);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "timecode.userbits: %s", (char *)&buffer->timecode.userbits);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "sequence: %u", buffer->sequence);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "memory: %u", buffer->memory);
+
+    switch (buffer->memory) {
+        case V4L2_MEMORY_MMAP:
+            __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "m.offset: %u", buffer->m.offset);
+            break;
+        case V4L2_MEMORY_USERPTR:
+            __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "m.userptr: %lu", buffer->m.userptr);
+            break;
+        case V4L2_MEMORY_OVERLAY:
+            __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "m.userptr: %p", (void *)buffer->m.userptr);
+            break;
+        case V4L2_MEMORY_DMABUF:
+            __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "m.fd: %u", (int32_t)buffer->m.fd);
+            break;
+    }
+
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "length: %u", buffer->length);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "reserved2: %u", buffer->reserved2);
+    __android_log_print(ANDROID_LOG_DEBUG, "v4l2_buffer", "reserved: %u", buffer->reserved);
+}
+
 int Codec_OSAL_DequeueBuf(
     CodecOSALVideoContext   *pCtx,
     CodecOSAL_Buffer        *pBuf)
@@ -412,8 +450,12 @@ int Codec_OSAL_DequeueBuf(
         buf.m.planes    = planes;
         buf.length      = pBuf->nPlane;
         buf.memory      = pBuf->memory;
+        
+        ALOGW("exynos_v4l2_dqbuf: executed from %s. \nFD = %d, buf (see below) ", __func__, pCtx->videoCtx.hDevice );
+        log_v4l2_buffer_OSAL(&buf);
 
         if (exynos_v4l2_dqbuf(pCtx->videoCtx.hDevice, &buf) == 0) {
+            ALOGW("exynos_v4l2_dqbuf: executed from %s. **IF CONDITION PASSED** \nFD = %d, buf (see below) ", __func__, pCtx->videoCtx.hDevice );
             pBuf->index     = buf.index;
 #ifdef USE_ORIGINAL_HEADER
             if (pCtx->videoCtx.bVideoBufFlagCtrl == VIDEO_TRUE) {
